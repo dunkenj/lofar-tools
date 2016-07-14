@@ -44,8 +44,8 @@ def split_url(url):
     url_split = urlparse.urlsplit(url)
     head, filename = os.path.split(url_split.path)
     return filename
-    
-def get_wise(coordinates, ang_size, band=1, clobber=True):
+
+def dl_wise(coordinates, ang_size, band=1, clobber=True):
     """
     Get cutouts of ALLWISE images
         
@@ -95,6 +95,36 @@ def get_wise(coordinates, ang_size, band=1, clobber=True):
     test = urllib.urlretrieve(obj_url+query_string,
                               filename=filename)
     print(obj_url+query_string)
+
+    return filename
+
+def get_wise(coordinates, ang_size, band=1, clobber=True):
+    """
+    Get cutouts of ALLWISE images
+        
+    
+    Parameters
+    ----------
+    coordinates : astropy.coordinates object
+        Central coordinates of desired cutout
+        
+    ang_size : astropy.quantity object
+        Angular diamater of desired cutout (max = 5 degrees)
+    
+    band : integer, default = 1
+        WISE band to get cutout for. WISE filters correspond to rest-frame
+        central wavelengths of W1 = 3.4um, W2 = 4.6um, W3 = 12.0um and 
+        W4 = 22.0um.
+        
+    clobber : bool, default = True
+        Overwrite existing filenames when generating cutouts
+        
+    Returns
+    -------
+    
+        
+    """
+    filename = dl_wise(coordinates, ang_size, band=1, clobber=True)
     
     image = load_image(filename)
         
@@ -176,31 +206,3 @@ def scale_rgb(red, green, blue, stretch_coeff,
                     g_stretch(interval(green)),
                     b_stretch(interval(blue))]).T
     return rgb
-
-
-asize =  60*u.arcsec
-test_pos = SkyCoord(244.6461*u.deg, 7.4106*u.deg)
-wise = get_wise(test_pos, asize)
-pscale = (wise.header['PXSCAL1']*u.arcsec)
-pscale = 0.5*u.arcsec
-
-
-g = get_decals(test_pos, asize, band='g',
-                      pix_scale=pscale)
-r = get_decals(test_pos, asize, band='r',
-                      pix_scale=pscale)
-z = get_decals(test_pos, asize, band='z',
-                      pix_scale=pscale)
-
-wise2 = wcs_project(wise, g.wcs, g.shape)
-
-imstretch = vis.stretch.LogStretch()
-
-rgb = scale_rgb(z, r, g, np.array([1, 1, 1])*1., pmin=1, pmax=98)
-
-rgb_wise = scale_rgb(wise2, z, g, np.array([0.66, 1, 1])*1., pmin=1, pmax=98)
-
-Fig, Ax = plt.subplots(1,2)
-Ax[0].imshow(rgb, interpolation='nearest')
-Ax[1].imshow(rgb_wise, interpolation='nearest')
-plt.show()
